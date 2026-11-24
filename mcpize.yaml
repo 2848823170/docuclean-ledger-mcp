@@ -20,7 +20,7 @@ bridge:
 pricing:
   protocol: x402
   network: base
-  recipient: "0x439Ba3BcFe084fd7A9CF81ee61d5761A1C1B6634"
+  recipient: "0xfEbDbB880C7f323c145d61683874a45540208a68"
   asset: usdc
   tools:
     - name: reconcile_statements_and_invoices

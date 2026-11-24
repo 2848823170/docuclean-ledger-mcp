@@ -136,7 +136,8 @@ test('1. Apify .actor schemas, Pay-Per-Event config, MCPize manifest, Dockerfile
   assert.match(mcpizeYaml, /type:\s*http/);
   assert.match(mcpizeYaml, /protocol:\s*x402/);
   assert.match(mcpizeYaml, /network:\s*base/);
-  assert.match(mcpizeYaml, /0x439Ba3BcFe084fd7A9CF81ee61d5761A1C1B6634/);
+  assert.match(mcpizeYaml, /0xfEbDbB880C7f323c145d61683874a45540208a68/);
+  assert.doesNotMatch(mcpizeYaml, /0x439Ba3BcFe084fd7A9CF81ee61d5761A1C1B6634/i);
   assert.doesNotMatch(mcpizeYaml, /^\s*(title|transport|monetization):/m);
 
   const sdkServer = createMcpServer({ meter: ppeMeter });
