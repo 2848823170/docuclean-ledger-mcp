@@ -227,6 +227,11 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
     const meter = new PayPerEventMeter({ env });
     const server = createHttpMcpServer({ meter });
     await new Promise((resolveListen) => server.listen(port, '0.0.0.0', resolveListen));
+    const shutdown = () => {
+      server.close(() => process.exit(0));
+    };
+    process.once('SIGTERM', shutdown);
+    process.once('SIGINT', shutdown);
     console.error(
       `[docuclean-ledger-mcp] Standby Streamable HTTP + SSE MCP server listening on http://0.0.0.0:${port}/mcp`,
     );

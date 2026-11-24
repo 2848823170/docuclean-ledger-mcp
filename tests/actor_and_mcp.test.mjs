@@ -31,6 +31,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { PayPerEventMeter } from '../src/billing/ppe.mjs';
+import { createMcpServer } from '../src/index.js';
 import { runBatchActor } from '../src/main.mjs';
 import { createHttpMcpServer } from '../src/mcp/server.mjs';
 import { executeCommercialTool } from '../src/mcp/tools.mjs';
@@ -131,12 +132,19 @@ test('1. Apify .actor schemas, Pay-Per-Event config, MCPize manifest, Dockerfile
 
   const mcpizeYaml = readFileSync(resolve(ROOT_DIR, 'mcpize.yaml'), 'utf8');
   assert.match(mcpizeYaml, /name:\s*docuclean-ledger-mcp/);
-  assert.match(mcpizeYaml, /revenueShareCreatorPct:\s*80/);
-  assert.match(mcpizeYaml, /reconcile_statements_and_invoices:\s*0\.02/);
+  assert.match(mcpizeYaml, /runtime:\s*container/);
+  assert.match(mcpizeYaml, /type:\s*http/);
+  assert.match(mcpizeYaml, /protocol:\s*x402/);
+  assert.match(mcpizeYaml, /network:\s*base/);
+  assert.match(mcpizeYaml, /0x439Ba3BcFe084fd7A9CF81ee61d5761A1C1B6634/);
+  assert.doesNotMatch(mcpizeYaml, /^\s*(title|transport|monetization):/m);
+
+  const sdkServer = createMcpServer({ meter: ppeMeter });
+  assert.ok(sdkServer && typeof sdkServer.connect === 'function');
 
   const publishDoc = readFileSync(resolve(ROOT_DIR, 'PUBLISH_APIFY_MCPIZE.md'), 'utf8');
   assert.match(publishDoc, /apify-cli/);
-  assert.match(publishDoc, /@mcpize\/cli/);
+  assert.match(publishDoc, /mcpize@latest/);
   assert.doesNotMatch(publishDoc, /Gumroad|Lemon\s*Squeezy/i);
 });
 
@@ -560,7 +568,7 @@ test('6. Streamable HTTP (/mcp), Legacy SSE (/sse), Apify Standby readiness prob
   const baseUrl = `http://127.0.0.1:${mcpPort}`;
 
   try {
-    // 6a. Apify Standby Container Readiness Probe
+    // 6a. Apify Standby Container Readiness Probe + MCPize /ping & /health + POST / MCP Gateway
     const probeRes = await fetch(`${baseUrl}/`, {
       headers: { 'x-apify-container-server-readiness-probe': '1' },
     });
@@ -569,6 +577,39 @@ test('6. Streamable HTTP (/mcp), Legacy SSE (/sse), Apify Standby readiness prob
     assert.equal(probeJson.ok, true);
     assert.equal(probeJson.readinessProbe, true);
     assert.equal(probeJson.mcpEndpoint, '/mcp');
+
+    const pingRes = await fetch(`${baseUrl}/ping`);
+    assert.equal(pingRes.status, 200);
+    const pingJson = await pingRes.json();
+    assert.equal(pingJson.status, 'pong');
+
+    const healthRes = await fetch(`${baseUrl}/health`);
+    assert.equal(healthRes.status, 200);
+    const healthJson = await healthRes.json();
+    assert.equal(healthJson.status, 'healthy');
+
+    const rootInitRes = await fetch(`${baseUrl}/`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 901,
+        method: 'initialize',
+        params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'mcpize-gateway', version: '1.0.0' } },
+      }),
+    });
+    assert.equal(rootInitRes.status, 200);
+    const rootInitJson = await rootInitRes.json();
+    assert.equal(rootInitJson.result.protocolVersion, '2025-06-18');
+
+    const rootListRes = await fetch(`${baseUrl}/`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 902, method: 'tools/list', params: {} }),
+    });
+    assert.equal(rootListRes.status, 200);
+    const rootListJson = await rootListRes.json();
+    assert.equal(rootListJson.result.tools.length, 3);
 
     // 6b. Notification returns 202 Accepted
     const notifRes = await fetch(`${baseUrl}/mcp`, {

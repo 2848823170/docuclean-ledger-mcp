@@ -81,13 +81,13 @@ Invoke-RestMethod -Method Post -Uri $McpUrl `
 cd ./docuclean-ledger-mcp
 
 # 1. Authenticate via GitHub OAuth ($0.00)
-npx --yes @mcpize/cli@latest login
+npx --yes mcpize@latest login
 
-# 2. Validate mcpize.yaml, Dockerfile, and /health + /mcp endpoints
-npx --yes @mcpize/cli@latest doctor
+# 2. Validate mcpize.yaml, Dockerfile, and local diagnostics
+npx --yes mcpize@latest doctor
 
-# 3. Deploy container & publish listing with hybrid pricing ($0.02/call + $9/mo Solo & $29/mo Team)
-npx --yes @mcpize/cli@latest deploy
+# 3. Deploy container & publish listing with native x402 Base USDC per-tool pricing
+npx --yes mcpize@latest deploy
 ```
 
 ---

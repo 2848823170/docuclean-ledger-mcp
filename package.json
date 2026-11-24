@@ -10,17 +10,23 @@
   "bin": {
     "docuclean-ledger-mcp": "./bin/docuclean-ledger-mcp.mjs"
   },
-  "main": "./src/main.mjs",
+  "main": "./src/index.js",
   "exports": {
-    ".": "./src/main.mjs",
+    ".": "./src/index.js",
+    "./main": "./src/main.mjs",
     "./tools": "./src/mcp/tools.mjs",
     "./server": "./src/mcp/server.mjs"
   },
   "scripts": {
-    "start": "node ./src/main.mjs",
-    "start:stdio": "node ./src/main.mjs --stdio",
-    "start:http": "node ./src/main.mjs --http",
+    "start": "node ./src/index.js",
+    "start:stdio": "node ./src/index.js --stdio",
+    "start:http": "node ./src/index.js --http",
+    "dev": "node ./src/index.js --http",
     "test": "node --test ./tests/actor_and_mcp.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
   },
   "keywords": [
     "mcp",
@@ -29,6 +35,7 @@
     "apify-actor",
     "pay-per-event",
     "mcpize",
+    "x402",
     "reconciliation",
     "invoice",
     "alipay",

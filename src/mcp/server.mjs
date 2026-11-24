@@ -18,7 +18,7 @@ export const SERVER_INFO = {
   version: '1.0.0',
 };
 
-const SUPPORTED_PROTOCOLS = ['2025-03-26', '2024-11-05', '2024-10-07'];
+const SUPPORTED_PROTOCOLS = ['2025-06-18', '2025-03-26', '2024-11-05', '2024-10-07'];
 
 const MCP_PROMPTS = [
   {
@@ -366,15 +366,25 @@ export function createHttpMcpServer({ meter } = {}) {
       return;
     }
 
-    // 1. Apify Standby Container Readiness Probe & Root Info
-    if (req.method === 'GET' && (pathname === '/' || pathname === '/health')) {
-      const isReadinessProbe = Boolean(req.headers['x-apify-container-server-readiness-probe']);
+    // 1. Lightweight Ping & Cloud Run / Apify Readiness Health Endpoints
+    if (req.method === 'GET' && pathname === '/ping') {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(
         JSON.stringify({
           ok: true,
-          status: 'ready',
-          readinessProbe: isReadinessProbe,
+          status: 'pong',
+          server: SERVER_INFO,
+        }),
+      );
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(
+        JSON.stringify({
+          ok: true,
+          status: 'healthy',
           server: SERVER_INFO,
           mcpEndpoint: '/mcp',
           sseEndpoint: '/sse',
@@ -383,6 +393,32 @@ export function createHttpMcpServer({ meter } = {}) {
         }),
       );
       return;
+    }
+
+    if (req.method === 'GET' && pathname === '/') {
+      const isReadinessProbe = Boolean(req.headers['x-apify-container-server-readiness-probe']);
+      const acceptHdr = String(req.headers.accept || '');
+      const isPureSseAccept =
+        !isReadinessProbe &&
+        acceptHdr.includes('text/event-stream') &&
+        !acceptHdr.includes('application/json') &&
+        !acceptHdr.includes('text/html');
+      if (!isPureSseAccept) {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(
+          JSON.stringify({
+            ok: true,
+            status: 'ready',
+            readinessProbe: isReadinessProbe,
+            server: SERVER_INFO,
+            mcpEndpoint: '/mcp',
+            sseEndpoint: '/sse',
+            pricingEndpoint: '/pricing',
+            tools: MCP_TOOLS.map((t) => t.name),
+          }),
+        );
+        return;
+      }
     }
 
     // 2. Public Pay-Per-Event Pricing Endpoint
@@ -400,8 +436,8 @@ export function createHttpMcpServer({ meter } = {}) {
       return;
     }
 
-    // 3. Streamable HTTP MCP Endpoint (`/mcp`)
-    if (pathname === '/mcp') {
+    // 3. Streamable HTTP MCP Endpoint (`POST /` & `POST /mcp` for MCPize Gateway + Apify Standby)
+    if (pathname === '/mcp' || pathname === '/') {
       const sessionId = req.headers['mcp-session-id'] || randomUUID();
       res.setHeader('Mcp-Session-Id', String(sessionId));
 

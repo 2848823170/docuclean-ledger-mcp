@@ -56,11 +56,19 @@ AI coding and finance agents routinely hallucinate arithmetic on bank statements
   "mcpServers": {
     "docuclean-ledger": {
       "command": "node",
-      "args": ["./src/main.mjs", "--stdio"]
+      "args": ["./src/index.js", "--stdio"]
     }
   }
 }
 ```
+
+---
+
+## Tools
+
+- `reconcile_statements_and_invoices`: Reconcile Alipay, WeChat Pay, Stripe, PayPal, and bank CSV/JSON statements against electronic invoices (`数电票` XML/PDF, UBL 2.1 XML, CSV, JSON) into a 3-sheet OpenXML `.xlsx` audit workbook and UTF-8 BOM CSV.
+- `extract_and_clean_pdf_tables_to_xlsx`: Extract and clean multi-page PDF, HTML (`rowspan`/`colspan`), Markdown, JSON, or CSV tables into formula-ready OpenXML `.xlsx` and UTF-8 BOM CSV.
+- `repair_cjk_csv_mojibake`: Detect and repair broken `GB18030`, `GBK`, `Big5`, `Shift_JIS`, `EUC-KR`, `UTF-16`, and `UTF-8-as-Latin1` CJK CSV files while neutralizing OWASP CSV/DDE formula injection.
 
 ---
 

@@ -16,12 +16,21 @@ ENV PATH="/opt/pdfvenv/bin:${PATH}" \
 
 WORKDIR /usr/src/app
 
-COPY package.json ./
+COPY package*.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+
 COPY .actor ./.actor
 COPY bin ./bin
 COPY src ./src
-COPY README.md ./
+COPY mcpize.yaml server.json README.md ./
+
+RUN chown -R node:node /usr/src/app
+
+USER node
 
 EXPOSE 8080
 
-CMD ["node", "./src/main.mjs"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 8080) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+CMD ["node", "src/index.js"]
