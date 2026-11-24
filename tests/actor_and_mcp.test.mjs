@@ -123,11 +123,14 @@ test('1. Apify .actor schemas, Pay-Per-Event config, MCPize manifest, Dockerfile
 
   const ppeMeter = new PayPerEventMeter();
   const events = ppeMeter.getCatalogSummary();
-  assert.equal(events.length, 4);
+  assert.equal(events.length, 7);
   const byName = Object.fromEntries(events.map((e) => [e.eventName, e.eventPriceUsd]));
   assert.equal(byName['reconcile-statements-invoices'], 0.02);
   assert.equal(byName['extract-pdf-tables-to-xlsx'], 0.02);
   assert.equal(byName['repair-cjk-csv-mojibake'], 0.005);
+  assert.equal(byName['validate-multichain-address'], 0.01);
+  assert.equal(byName['decode-audit-evm-calldata'], 0.01);
+  assert.equal(byName['audit-eip712-signature'], 0.01);
   assert.equal(byName['actor-start'], 0.001);
 
   const mcpizeYaml = readFileSync(resolve(ROOT_DIR, 'mcpize.yaml'), 'utf8');
@@ -508,7 +511,7 @@ test('5. MCP stdio server handles both newline-delimited JSON-RPC and Content-Le
 
     assert.equal(responses[0].result.protocolVersion, '2025-03-26');
     assert.equal(responses[0].result.serverInfo.name, 'docuclean-ledger-mcp');
-    assert.equal(responses[1].result.tools.length, 3);
+    assert.equal(responses[1].result.tools.length, 6);
 
     // 5b. Content-Length framed tools/call + unknown tool check
     const callBody = JSON.stringify({
@@ -610,7 +613,7 @@ test('6. Streamable HTTP (/mcp), Legacy SSE (/sse), Apify Standby readiness prob
     });
     assert.equal(rootListRes.status, 200);
     const rootListJson = await rootListRes.json();
-    assert.equal(rootListJson.result.tools.length, 3);
+    assert.equal(rootListJson.result.tools.length, 6);
 
     // 6b. Notification returns 202 Accepted
     const notifRes = await fetch(`${baseUrl}/mcp`, {
@@ -759,4 +762,60 @@ test('7. Apify Batch Actor mode reads INPUT.json and writes OUTPUT.json, OUTPUT.
   } finally {
     rmSync(tempStorage, { recursive: true, force: true });
   }
+});
+
+test('8. Integrated Web3 Tx Guard tools (validate_multichain_address, decode_and_audit_evm_calldata, audit_eip712_signature_payload) work end-to-end', async () => {
+  const meter = new PayPerEventMeter();
+
+  const addrRes = await executeCommercialTool(
+    'validate_multichain_address',
+    { address: '0xfEbDbB880C7f323c145d61683874a45540208a68', expectedNetwork: 'mainnet' },
+    { meter },
+  );
+  assert.equal(addrRes.payload.summary.valid, true);
+  assert.equal(addrRes.payload.summary.safeToTransact, true);
+
+  const approveHex =
+    '0x095ea7b3' +
+    '0000000000000000000000001111111111111111111111111111111111111111' +
+    'f'.repeat(64);
+  const callRes = await executeCommercialTool(
+    'decode_and_audit_evm_calldata',
+    {
+      to: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      value: '0',
+      data: approveHex,
+      chainId: 8453,
+    },
+    { meter },
+  );
+  assert.equal(callRes.payload.summary.safeToExecute, false);
+  assert.equal(callRes.payload.summary.riskLevel, 'CRITICAL');
+
+  const sigRes = await executeCommercialTool(
+    'audit_eip712_signature_payload',
+    {
+      typedData: {
+        primaryType: 'OrderComponents',
+        domain: {
+          name: 'Seaport',
+          version: '1.5',
+          chainId: 1,
+          verifyingContract: '0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC',
+        },
+        types: { OrderComponents: [] },
+        message: {
+          offerer: '0xfEbDbB880C7f323c145d61683874a45540208a68',
+          offer: [{ itemType: 2, token: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D', startAmount: '1', endAmount: '1' }],
+          consideration: [],
+          endTime: '1890000000',
+        },
+      },
+      referenceTimestamp: 1795480000,
+    },
+    { meter },
+  );
+  assert.equal(sigRes.payload.summary.safeToSign, false);
+  assert.equal(sigRes.payload.summary.recommendation, 'DO_NOT_SIGN');
+  assert.equal(meter.totalChargedUsd, 0.03);
 });

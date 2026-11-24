@@ -16,6 +16,9 @@ import {
   decodeBase64ToBytes,
   healUnquotedCurrencyCommas,
 } from '../core/sanitize.mjs';
+import { auditEip712SignaturePayload } from '../web3/eip712-audit.mjs';
+import { decodeAndAuditEvmCalldata } from '../web3/evm-calldata.mjs';
+import { validateMultichainAddress } from '../web3/multichain-address.mjs';
 
 export const MCP_TOOLS = [
   {
@@ -162,6 +165,87 @@ export const MCP_TOOLS = [
     },
     annotations: {
       title: 'Repair CJK CSV Mojibake ($0.005)',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  {
+    name: 'validate_multichain_address',
+    title: 'Validate & Normalize Multichain Wallet Address',
+    description:
+      'Cryptographically validates and normalizes wallet/contract addresses across 8 ecosystems: EVM (Keccak-256 EIP-55 checksum + typo/burn detection), Tron (T... SHA-256d Base58Check + 0x41/EVM conversion), Bitcoin (BIP-173 Bech32 bc1q SegWit v0, BIP-350 Bech32m bc1p Taproot v1+, Legacy/P2SH Base58Check), Solana (Base58 32-byte Ed25519 curve check distinguishing user wallets from off-curve PDAs), TON (friendly EQ/UQ CRC16-XMODEM + bounceable uninit-wallet trap warning), XRP Ledger (classic r... + XLS-5d X-address destination-tag decoder), Cosmos Bech32, and Stacks c32check.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        address: { type: 'string', description: 'Address string to validate and normalize.' },
+        chain: {
+          type: 'string',
+          description: 'Optional chain constraint: auto, evm, tron, bitcoin, solana, ton, xrpl, cosmos, or stacks.',
+          default: 'auto',
+        },
+        expectedNetwork: {
+          type: 'string',
+          enum: ['any', 'mainnet', 'testnet'],
+          description: 'Expected network environment (any, mainnet, or testnet).',
+          default: 'any',
+        },
+      },
+      required: ['address'],
+    },
+    annotations: {
+      title: 'Validate Multichain Address ($0.01)',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  {
+    name: 'decode_and_audit_evm_calldata',
+    title: 'Decode & Audit Raw EVM Transaction Calldata',
+    description:
+      'Deterministically decodes raw hex EVM transaction payloads (`to`, `value`, `data`, `chainId`) across ERC-20 (`transfer`, `approve`, `transferFrom`, `increaseAllowance`), ERC-721/1155 (`setApprovalForAll`, `safeTransferFrom`), Permit2, Uniswap V2/V3/UniversalRouter, 1inch, Multicall (recursive inner-call decoding), and Gnosis Safe `execTransaction`. Flags CRITICAL unlimited approvals (>= 2^255 / MAX_UINT160), setApprovalForAll(true), zero-minOut MEV sandwich exposure, non-zero ETH sent with approvals, expired deadlines, and DELEGATECALL takeovers.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        to: { type: 'string', description: 'Target 0x contract or recipient address.' },
+        value: { type: 'string', description: 'Native ETH/gas token value in wei (decimal or 0x hex).', default: '0' },
+        data: { type: 'string', description: '0x-prefixed hex calldata string.', default: '0x' },
+        chainId: { type: 'number', description: 'EVM Chain ID (default: 8453 Base).', default: 8453 },
+        sender: { type: 'string', description: 'Optional sender 0x address for swap output-diversion checks.' },
+        referenceTimestamp: { type: 'number', description: 'Optional Unix timestamp in seconds.' },
+      },
+      required: ['data'],
+    },
+    annotations: {
+      title: 'Decode & Audit EVM Calldata ($0.01)',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  {
+    name: 'audit_eip712_signature_payload',
+    title: 'Audit Off-Chain EIP-712 Typed-Data Signature Payload',
+    description:
+      'Audits off-chain `eth_signTypedData_v4` JSON objects or strings (`Permit`, DAI `Permit`, `PermitSingle`, `PermitBatch`, `PermitTransferFrom`, Seaport `OrderComponents`, Circle USDC EIP-3009 `TransferWithAuthorization` / `x402`, `ForwardRequest`, `SafeTx`) before signing. Computes EIP-712 `domainSeparator` and flags unlimited allowances, Seaport zero-consideration NFT/token drains, DELEGATECALL meta-txs, multi-month/infinite signature expirations, and domain chainId/contract spoofing.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        typedData: { description: 'eth_signTypedData_v4 JSON object or serialized JSON string.' },
+        expectedChainId: { type: 'number', description: 'Optional expected EVM chainId.' },
+        expectedVerifyingContract: { type: 'string', description: 'Optional expected 0x verifyingContract.' },
+        expectedRecipient: { type: 'string', description: 'Optional expected 0x recipient for x402 / EIP-3009.' },
+        expectedMaxAmount: { type: 'string', description: 'Optional maximum expected raw token amount.' },
+        referenceTimestamp: { type: 'number', description: 'Optional Unix timestamp in seconds.' },
+      },
+      required: ['typedData'],
+    },
+    annotations: {
+      title: 'Audit EIP-712 Signature Payload ($0.01)',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
@@ -395,6 +479,122 @@ export async function executeCommercialTool(toolName, args = {}, { meter = null,
       },
       billing: chargeReceipt,
     };
+  }
+
+  if (toolName === 'validate_multichain_address') {
+    if (!args.address || typeof args.address !== 'string' || !args.address.trim()) {
+      throw new Error('`validate_multichain_address` requires a non-empty `address` string.');
+    }
+    preCheckBudget('validate-multichain-address');
+
+    const analysis = validateMultichainAddress({
+      address: args.address,
+      chain: args.chain || 'auto',
+      expectedNetwork: args.expectedNetwork || 'any',
+    });
+
+    const chargeReceipt = meter
+      ? await meter.charge({ eventName: 'validate-multichain-address', count: 1, idempotencyKey })
+      : null;
+    if (chargeReceipt && !chargeReceipt.charged) {
+      throw new Error(`Pay-Per-Event spending limit reached (${chargeReceipt.reason}).`);
+    }
+
+    const payload = {
+      tool: toolName,
+      status: 'ok',
+      billing: chargeReceipt,
+      summary: {
+        valid: analysis.valid,
+        safeToTransact: analysis.safeToTransact,
+        riskLevel: analysis.riskLevel,
+        chain: analysis.chain,
+        network: analysis.network,
+        canonicalAddress: analysis.canonicalAddress,
+      },
+      analysis,
+    };
+    return { payload, binaryArtifacts: { xlsxBytes: null, utf8BomCsv: null }, billing: chargeReceipt };
+  }
+
+  if (toolName === 'decode_and_audit_evm_calldata') {
+    if (args.data === undefined && args.to === undefined) {
+      throw new Error('`decode_and_audit_evm_calldata` requires `data` (0x hex) and/or `to` address.');
+    }
+    preCheckBudget('decode-audit-evm-calldata');
+
+    const audit = decodeAndAuditEvmCalldata({
+      to: args.to || '',
+      value: args.value ?? '0',
+      data: args.data ?? '0x',
+      chainId: args.chainId ?? 8453,
+      sender: args.sender || '',
+      referenceTimestamp: args.referenceTimestamp ?? null,
+    });
+
+    const chargeReceipt = meter
+      ? await meter.charge({ eventName: 'decode-audit-evm-calldata', count: 1, idempotencyKey })
+      : null;
+    if (chargeReceipt && !chargeReceipt.charged) {
+      throw new Error(`Pay-Per-Event spending limit reached (${chargeReceipt.reason}).`);
+    }
+
+    const payload = {
+      tool: toolName,
+      status: 'ok',
+      billing: chargeReceipt,
+      summary: {
+        safeToExecute: audit.safeToExecute,
+        recommendation: audit.recommendation,
+        riskLevel: audit.riskLevel,
+        riskScore: audit.riskScore,
+        standard: audit.standard,
+        functionName: audit.functionName,
+        findingCount: audit.findings.length,
+      },
+      audit,
+    };
+    return { payload, binaryArtifacts: { xlsxBytes: null, utf8BomCsv: null }, billing: chargeReceipt };
+  }
+
+  if (toolName === 'audit_eip712_signature_payload') {
+    if (args.typedData === undefined || args.typedData === null || args.typedData === '') {
+      throw new Error('`audit_eip712_signature_payload` requires a non-empty `typedData` object or JSON string.');
+    }
+    preCheckBudget('audit-eip712-signature');
+
+    const audit = auditEip712SignaturePayload({
+      typedData: args.typedData,
+      expectedChainId: args.expectedChainId ?? null,
+      expectedVerifyingContract: args.expectedVerifyingContract || '',
+      expectedRecipient: args.expectedRecipient || '',
+      expectedMaxAmount: args.expectedMaxAmount ?? null,
+      referenceTimestamp: args.referenceTimestamp ?? null,
+    });
+
+    const chargeReceipt = meter
+      ? await meter.charge({ eventName: 'audit-eip712-signature', count: 1, idempotencyKey })
+      : null;
+    if (chargeReceipt && !chargeReceipt.charged) {
+      throw new Error(`Pay-Per-Event spending limit reached (${chargeReceipt.reason}).`);
+    }
+
+    const payload = {
+      tool: toolName,
+      status: 'ok',
+      billing: chargeReceipt,
+      summary: {
+        safeToSign: audit.safeToSign,
+        recommendation: audit.recommendation,
+        riskLevel: audit.riskLevel,
+        riskScore: audit.riskScore,
+        schemaCategory: audit.schemaCategory,
+        primaryType: audit.primaryType,
+        findingCount: audit.findings.length,
+      },
+      audit,
+    };
+    return { payload, binaryArtifacts: { xlsxBytes: null, utf8BomCsv: null }, billing: chargeReceipt };
   }
 
   const err = new Error(`Unknown MCP tool: "${toolName}"`);

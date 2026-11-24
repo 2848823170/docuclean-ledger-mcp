@@ -1,6 +1,6 @@
 version: 1
 name: docuclean-ledger-mcp
-description: Deterministic bank, Alipay, WeChat Pay, and Stripe statement + electronic invoice reconciliation, multi-page PDF/HTML table extraction to OpenXML .xlsx, and CJK CSV mojibake repair.
+description: Deterministic Finance, Document & Web3 Treasury Guard MCP — statement/invoice reconciliation, PDF-to-XLSX extraction, CJK CSV mojibake repair, 8-chain wallet validation, EVM calldata MEV/approval decoding, and EIP-712 signature auditing.
 runtime: container
 entry: src/index.js
 
@@ -32,3 +32,12 @@ pricing:
     - name: repair_cjk_csv_mojibake
       price: "0.01"
       description: Detect and repair broken GB18030, GBK, Big5, Shift-JIS, EUC-KR, UTF-16, and UTF8-as-Latin1 CJK CSV files with OWASP DDE protection.
+    - name: validate_multichain_address
+      price: "0.01"
+      description: Cryptographically validate and normalize wallet addresses across EVM, Tron, Bitcoin, Solana, TON, XRP Ledger, Cosmos, and Stacks with checksum, PDA, bounce-trap, and burn-risk detection.
+    - name: decode_and_audit_evm_calldata
+      price: "0.01"
+      description: Decode raw hex EVM calldata (ERC-20/721/1155, Permit2, Uniswap V2/V3/UniversalRouter, 1inch, Multicall, Safe) and flag unlimited approvals, zero-minOut MEV sandwich exposure, and delegatecall traps.
+    - name: audit_eip712_signature_payload
+      price: "0.01"
+      description: Audit off-chain eth_signTypedData_v4 payloads (EIP-2612 Permit, Permit2, Seaport, EIP-3009 x402, SafeTx, ForwardRequest) for blind-signing drains, unlimited allowances, and domain spoofing.

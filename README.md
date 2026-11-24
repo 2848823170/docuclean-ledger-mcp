@@ -86,6 +86,9 @@ Or from a local clone:
 - `reconcile_statements_and_invoices`: Reconcile Alipay, WeChat Pay, Stripe, PayPal, and bank CSV/JSON statements against electronic invoices (`数电票` XML/PDF, UBL 2.1 XML, CSV, JSON) into a 3-sheet OpenXML `.xlsx` audit workbook and UTF-8 BOM CSV.
 - `extract_and_clean_pdf_tables_to_xlsx`: Extract and clean multi-page PDF, HTML (`rowspan`/`colspan`), Markdown, JSON, or CSV tables into formula-ready OpenXML `.xlsx` and UTF-8 BOM CSV.
 - `repair_cjk_csv_mojibake`: Detect and repair broken `GB18030`, `GBK`, `Big5`, `Shift_JIS`, `EUC-KR`, `UTF-16`, and `UTF-8-as-Latin1` CJK CSV files while neutralizing OWASP CSV/DDE formula injection.
+- `validate_multichain_address`: Cryptographically validate and normalize wallet/contract addresses across **8 ecosystems** (`EVM` EIP-55, `Tron` Base58Check, `Bitcoin` Bech32/Bech32m, `Solana` Ed25519 curve vs PDA, `TON` EQ/UQ CRC16 + bounce trap, `XRPL` classic `r...` + `X-Address` tag, `Cosmos`, `Stacks`).
+- `decode_and_audit_evm_calldata`: Decode raw hex EVM calldata (`ERC-20/721/1155`, `Permit2`, `Uniswap V2/V3/UniversalRouter`, `1inch`, recursive `Multicall`, `Safe`) and flag unlimited approvals, `amountOutMin == 0` MEV sandwich exposure, and `DELEGATECALL` takeovers.
+- `audit_eip712_signature_payload`: Audit off-chain `eth_signTypedData_v4` payloads (`EIP-2612 Permit`, `DAI Permit`, `Permit2`, `Seaport OrderComponents`, `EIP-3009` `x402`, `ForwardRequest`, `SafeTx`) before signing.
 
 ---
 

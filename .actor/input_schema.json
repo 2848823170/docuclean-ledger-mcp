@@ -13,12 +13,18 @@
       "enum": [
         "reconcile_statements_and_invoices",
         "extract_and_clean_pdf_tables_to_xlsx",
-        "repair_cjk_csv_mojibake"
+        "repair_cjk_csv_mojibake",
+        "validate_multichain_address",
+        "decode_and_audit_evm_calldata",
+        "audit_eip712_signature_payload"
       ],
       "enumTitles": [
         "Reconcile Statements & Electronic Invoices ($0.02)",
         "Extract & Clean PDF / HTML / Messy Tables to XLSX ($0.02)",
-        "Repair CJK CSV Mojibake & Formula Injection ($0.005)"
+        "Repair CJK CSV Mojibake & Formula Injection ($0.005)",
+        "Validate Multichain Wallet Address ($0.01)",
+        "Decode & Audit EVM Transaction Calldata ($0.01)",
+        "Audit EIP-712 Typed-Data Signature Payload ($0.01)"
       ]
     },
     "statements": {
@@ -97,6 +103,34 @@
       "description": "Append live =SUM() and =AVERAGE() summary rows for numeric columns in generated .xlsx files.",
       "editor": "checkbox",
       "default": true
+    },
+    "address": {
+      "title": "Wallet / Contract Address (validate_multichain_address)",
+      "type": "string",
+      "description": "Address string to validate across EVM, Tron, Bitcoin, Solana, TON, XRPL, Cosmos, or Stacks.",
+      "editor": "textfield",
+      "default": ""
+    },
+    "chain": {
+      "title": "Expected Blockchain Hint (Optional)",
+      "type": "string",
+      "description": "Optional chain constraint: auto, evm, tron, bitcoin, solana, ton, xrpl, cosmos, or stacks.",
+      "editor": "textfield",
+      "default": "auto"
+    },
+    "data": {
+      "title": "Raw EVM Hex Calldata (decode_and_audit_evm_calldata)",
+      "type": "string",
+      "description": "0x-prefixed hex calldata string for EVM transaction pre-flight decoding.",
+      "editor": "textarea",
+      "default": "0x"
+    },
+    "typedData": {
+      "title": "EIP-712 TypedData v4 Payload (audit_eip712_signature_payload)",
+      "type": "object",
+      "description": "Full eth_signTypedData_v4 JSON object containing domain, types, primaryType, and message.",
+      "editor": "json",
+      "default": {}
     }
   },
   "required": ["tool"]
