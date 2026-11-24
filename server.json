@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.2848823170/docuclean-ledger-mcp",
+  "description": "Statement & e-invoice reconciliation, PDF-to-XLSX table extraction, and CJK CSV mojibake repair MCP server.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/2848823170/docuclean-ledger-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "docuclean-ledger-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://2848823170--docuclean-ledger-mcp.apify.actor/mcp"
+    }
+  ]
+}

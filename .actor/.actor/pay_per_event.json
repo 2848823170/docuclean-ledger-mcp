@@ -1,0 +1,30 @@
+[
+  {
+    "reconcile-statements-invoices": {
+      "eventTitle": "Reconcile Statements & Invoices",
+      "eventDescription": "Charged per execution of reconcile_statements_and_invoices (1:1, cross-currency FX, and N:1 subset-sum matching plus formula-safe OpenXML .xlsx and UTF-8 BOM CSV generation).",
+      "eventPriceUsd": 0.02
+    }
+  },
+  {
+    "extract-pdf-tables-to-xlsx": {
+      "eventTitle": "Extract & Clean PDF/Messy Tables to XLSX",
+      "eventDescription": "Charged per document converted by extract_and_clean_pdf_tables_to_xlsx into styled OpenXML .xlsx, Markdown, and formula-injection-safe UTF-8 BOM CSV.",
+      "eventPriceUsd": 0.02
+    }
+  },
+  {
+    "repair-cjk-csv-mojibake": {
+      "eventTitle": "Repair CJK CSV Mojibake",
+      "eventDescription": "Charged per file repaired by repair_cjk_csv_mojibake (GB18030/GBK/Big5/Shift-JIS/UTF-16/UTF8-as-Latin1 recovery + OWASP CSV formula neutralization).",
+      "eventPriceUsd": 0.005
+    }
+  },
+  {
+    "actor-start": {
+      "eventTitle": "Actor Batch Run Initialization",
+      "eventDescription": "Flat initialization charge covering container boot overhead on standalone batch runs.",
+      "eventPriceUsd": 0.001
+    }
+  }
+]

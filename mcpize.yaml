@@ -1,0 +1,54 @@
+version: 1
+name: docuclean-ledger-mcp
+title: DocuClean & LedgerClean Financial & Document MCP
+description: >
+  Deterministic bank/Alipay/WeChat/Stripe statement + electronic invoice reconciliation
+  (1:1, FX spread, and N:1 subset-sum matching), multi-page PDF/HTML table extraction to
+  formula-ready OpenXML .xlsx, and GB18030/GBK/Big5/Shift-JIS CJK CSV mojibake repair.
+runtime:
+  type: container
+  dockerfile: ./Dockerfile
+  port: 8080
+  mcpPath: /mcp
+  healthCheckPath: /health
+  env:
+    MCP_TRANSPORT: http
+transport:
+  streamableHttp:
+    path: /mcp
+  sse:
+    path: /sse
+    messagesPath: /messages
+  stdio:
+    command: node
+    args:
+      - ./src/main.mjs
+      - --stdio
+monetization:
+  revenueShareCreatorPct: 80
+  model: hybrid
+  freeTier:
+    callsPerMonth: 15
+  payPerCall:
+    currency: USD
+    defaultPriceUsd: 0.02
+    toolPricesUsd:
+      reconcile_statements_and_invoices: 0.02
+      extract_and_clean_pdf_tables_to_xlsx: 0.02
+      repair_cjk_csv_mojibake: 0.005
+  subscriptions:
+    - id: solo-pro
+      name: Solo Accountant & Indie Seller
+      priceMonthlyUsd: 9
+      includedCallsPerMonth: 1000
+    - id: finance-team
+      name: Finance & E-Commerce Studio
+      priceMonthlyUsd: 29
+      includedCallsPerMonth: 5000
+tools:
+  - name: reconcile_statements_and_invoices
+    description: Reconcile payment statements and electronic invoices into a matched OpenXML .xlsx audit pack and UTF-8 BOM CSV.
+  - name: extract_and_clean_pdf_tables_to_xlsx
+    description: Extract and clean multi-page PDF, HTML, JSON, XML, Markdown, or CSV tables into styled OpenXML .xlsx and Markdown.
+  - name: repair_cjk_csv_mojibake
+    description: Detect and repair broken GB18030/GBK/Big5/Shift-JIS/UTF-16/UTF8-as-Latin1 CJK CSV files and neutralize CSV formula injection.

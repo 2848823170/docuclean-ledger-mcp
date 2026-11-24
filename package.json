@@ -1,0 +1,43 @@
+{
+  "name": "docuclean-ledger-mcp",
+  "version": "1.0.0",
+  "description": "Commercial Pay-Per-Event Apify Actor & Model Context Protocol (MCP) Server for deterministic statement/invoice reconciliation, PDF-to-XLSX table extraction, and CJK CSV mojibake repair.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "docuclean-ledger-mcp": "./bin/docuclean-ledger-mcp.mjs"
+  },
+  "main": "./src/main.mjs",
+  "exports": {
+    ".": "./src/main.mjs",
+    "./tools": "./src/mcp/tools.mjs",
+    "./server": "./src/mcp/server.mjs"
+  },
+  "scripts": {
+    "start": "node ./src/main.mjs",
+    "start:stdio": "node ./src/main.mjs --stdio",
+    "start:http": "node ./src/main.mjs --http",
+    "test": "node --test ./tests/actor_and_mcp.test.mjs"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "apify",
+    "apify-actor",
+    "pay-per-event",
+    "mcpize",
+    "reconciliation",
+    "invoice",
+    "alipay",
+    "wechat-pay",
+    "pdf-to-excel",
+    "xlsx",
+    "mojibake",
+    "gb18030",
+    "cjk",
+    "csv"
+  ]
+}

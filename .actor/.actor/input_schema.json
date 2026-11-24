@@ -1,0 +1,103 @@
+{
+  "title": "DocuClean & LedgerClean MCP Actor Input",
+  "description": "Run directly as a Pay-Per-Event batch Actor or connect via Standby Streamable HTTP MCP at /mcp.",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "tool": {
+      "title": "Tool to Execute (Batch Mode)",
+      "type": "string",
+      "description": "Select which tool to invoke when running as an Apify batch job. In Standby mode, MCP clients call tools directly via /mcp.",
+      "editor": "select",
+      "default": "reconcile_statements_and_invoices",
+      "enum": [
+        "reconcile_statements_and_invoices",
+        "extract_and_clean_pdf_tables_to_xlsx",
+        "repair_cjk_csv_mojibake"
+      ],
+      "enumTitles": [
+        "Reconcile Statements & Electronic Invoices ($0.02)",
+        "Extract & Clean PDF / HTML / Messy Tables to XLSX ($0.02)",
+        "Repair CJK CSV Mojibake & Formula Injection ($0.005)"
+      ]
+    },
+    "statements": {
+      "title": "Statement Files (reconcile_statements_and_invoices)",
+      "type": "array",
+      "description": "Array of payment statement objects ({ filename, content? | contentBase64? }) from Alipay, WeChat Pay, Stripe, PayPal, or bank CSV exports.",
+      "editor": "json",
+      "default": []
+    },
+    "invoices": {
+      "title": "Electronic Invoice Files (reconcile_statements_and_invoices)",
+      "type": "array",
+      "description": "Array of invoice objects ({ filename, content? | contentBase64? }) in CN Digital e-Invoice XML/PDF, UBL 2.1 XML, CSV, or JSON format.",
+      "editor": "json",
+      "default": []
+    },
+    "baseCurrency": {
+      "title": "Base Accounting Currency",
+      "type": "string",
+      "description": "3-letter ISO currency code for executive P&L rollups (e.g. CNY, USD, EUR).",
+      "editor": "textfield",
+      "default": "CNY"
+    },
+    "expectedBuyerName": {
+      "title": "Expected Buyer Legal Name (Optional Tax Compliance Check)",
+      "type": "string",
+      "description": "Company or entity name expected in the Buyer field of incoming expense invoices.",
+      "editor": "textfield",
+      "default": ""
+    },
+    "expectedBuyerTaxId": {
+      "title": "Expected Buyer Tax ID / USCC (Optional Tax Compliance Check)",
+      "type": "string",
+      "description": "18-character Unified Social Credit Code or VAT/EIN expected on incoming expense invoices.",
+      "editor": "textfield",
+      "default": ""
+    },
+    "filename": {
+      "title": "Input Filename (PDF Table Extraction or CJK Mojibake Repair)",
+      "type": "string",
+      "description": "Filename hint with extension (e.g. statement.pdf, report.html, export.csv).",
+      "editor": "textfield",
+      "default": "document.pdf"
+    },
+    "contentBase64": {
+      "title": "Base64 Binary Payload (PDF / GBK / Big5 / UTF-16 Bytes)",
+      "type": "string",
+      "description": "Base64-encoded raw file bytes for PDF extraction or raw legacy-encoded CSV repair.",
+      "editor": "textarea",
+      "default": ""
+    },
+    "content": {
+      "title": "Raw Text / HTML / Markdown / CSV / JSON Payload",
+      "type": "string",
+      "description": "Direct string payload when sending text, HTML tables, Markdown tables, JSON, or double-encoded mojibake text.",
+      "editor": "textarea",
+      "default": ""
+    },
+    "mergePages": {
+      "title": "Stitch Multi-Page Continuation Tables",
+      "type": "boolean",
+      "description": "Automatically stitch continuation tables across PDF pages that repeat identical headers.",
+      "editor": "checkbox",
+      "default": true
+    },
+    "dedupeRows": {
+      "title": "Deduplicate Identical Data Rows",
+      "type": "boolean",
+      "description": "Remove exact duplicate rows while preserving original row order.",
+      "editor": "checkbox",
+      "default": false
+    },
+    "injectFormulas": {
+      "title": "Generate Live Excel SUM / AVERAGE Summary Rows",
+      "type": "boolean",
+      "description": "Append live =SUM() and =AVERAGE() summary rows for numeric columns in generated .xlsx files.",
+      "editor": "checkbox",
+      "default": true
+    }
+  },
+  "required": ["tool"]
+}
